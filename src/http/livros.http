@@ -1,0 +1,13 @@
+@baseURL = http://localhost:4000/api
+
+GET {{baseURL}}/livros
+Content-Type: application/json
+
+POST {{baseURL}}/livros
+Content-Type: application/json
+
+PUT {{baseURL}}/livros
+Content-Type: application/json
+
+DELETE {{baseURL}}/livros
+Content-Type: application/json
