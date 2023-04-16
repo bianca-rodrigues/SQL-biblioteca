@@ -97,3 +97,4 @@ router.get("/:id", (req, res) => {
         console.error(err)
     }
 })
+export default router
