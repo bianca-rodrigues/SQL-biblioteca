@@ -3,9 +3,6 @@ GO
 USE BIBLIOTECA
 GO
 
-
-DROP DATABASE BIBLIOTECA
-
 CREATE TABLE BIB_AUTORES(
 AUT_IN_ID INT NOT NULL IDENTITY CONSTRAINT BIB_PK_AUTOR PRIMARY KEY,
 AUT_ST_NOME VARCHAR(20) NOT NULL,
@@ -43,7 +40,7 @@ VALUES ('Java - como programar', '13-7272', '20090210', 50.60, 1, 2);
 INSERT INTO BIB_LIVRO (LIV_ST_TITULO, LIV_CH_ISBN, LIV_DT_PUBLICACAO, LIV_RE_PRECO, LIV_IN_ID_AUTOR, LIV_IN_ID_EDITORA)
 VALUES ('Java 6', '12-4566', '20020907', 50.60, 2, 1);
 
-INSERT INTO BIB_AUTORES (AUT_ST_NOME, AUT_ST_SOBRENOME) VALUES ('Jos�', 'Silva')
+INSERT INTO BIB_AUTORES (AUT_ST_NOME, AUT_ST_SOBRENOME) VALUES ('José', 'Silva')
 INSERT INTO BIB_AUTORES (AUT_ST_NOME, AUT_ST_SOBRENOME) VALUES ('Felipe', 'Souza')
 
 INSERT INTO BIB_EDITORA(EDI_ST_NOME) VALUES('Terra')
@@ -54,24 +51,22 @@ INNER JOIN BIB_EDITORA
 ON BIB_LIVRO.LIV_IN_ID_EDITORA = BIB_EDITORA.EDI_IN_ID
 
 
+
 /*
 *******************************************
 * STORED PROCEDURE DE INSERT LIVRO
 *******************************************
 */
 
-USE BIBLIOTECA
-GO
-
 CREATE OR ALTER PROCEDURE SP_I_BIB_LIVRO
-(@titulo varchar(100), @isbn char(14), @publicacao date, @preco numeric(10,2))
+(@titulo varchar(100), @isbn char(14), @publicacao date, @preco numeric(10,2), @idautor int, @ideditora int)
 AS
 DECLARE @TOTAL_LIVRO INT
 
 SELECT @TOTAL_LIVRO = COUNT(*) FROM BIB_LIVRO WHERE LIV_CH_ISBN = @isbn;
 IF(@TOTAL_LIVRO > 0)
 	BEGIN
-		RAISERROR('O c�digo ISBN�informado j� existe', 15,1)
+		RAISERROR('O código ISBN´informado já existe', 15,1)
 		RETURN
 	END
 IF(@isbn NOT LIKE '[0-9][0-9][-][0-9][0-9][0-9][0-9]')
@@ -81,27 +76,24 @@ IF(@isbn NOT LIKE '[0-9][0-9][-][0-9][0-9][0-9][0-9]')
 	END
 IF(@preco < 0)
 	BEGIN
-		RAISERROR('O pre�o do livro deve ser maior ou igual a 0', 15,1)
+		RAISERROR('O preço do livro deve ser maior ou igual a 0', 15,1)
 		RETURN
 	END
 
 IF(LEN(TRIM(@titulo))=0)
 	BEGIN
-		RAISERROR('O campo do t�tulo do livro � obrigat�rio', 15,1)
+		RAISERROR('O campo do título do livro é obrigatório', 15,1)
 		RETURN
 	END
 
-INSERT INTO BIB_LIVRO (LIV_ST_TITULO, LIV_CH_ISBN, LIV_DT_PUBLICACAO, LIV_RE_PRECO)
-VALUES (@titulo, @isbn, @publicacao, @preco);
+INSERT INTO BIB_LIVRO (LIV_ST_TITULO, LIV_CH_ISBN, LIV_DT_PUBLICACAO, LIV_RE_PRECO, LIV_IN_ID_AUTOR, LIV_IN_ID_EDITORA)
+VALUES (@titulo, @isbn, @publicacao, @preco, @idautor, @ideditora);
 
 /*
 *******************************************
 * STORED PROCEDURE DE SELECT LIVRO
 *******************************************
 */
-
-USE BIBLIOTECA
-GO
 
 CREATE OR ALTER PROCEDURE SP_S_BIB_LIVRO
 (@filtro varchar(100) ='')
@@ -110,13 +102,31 @@ IF(LEN(TRIM(@filtro))=0)
 	BEGIN
 		SELECT
 
-		LIV_ST_TITULO AS 'T�tulo',
-		LIV_CH_ISBN AS 'C�digoISBN',
-		LIV_RE_PRECO AS 'Pre�o',
-		FORMAT(LIV_DT_PUBLICACAO, 'dd/MM/yyyy') AS 'Publica��o'
+		LIV_ST_TITULO AS 'Título',
+		LIV_CH_ISBN AS 'CódigoISBN',
+		LIV_RE_PRECO AS 'Preço',
+		FORMAT(LIV_DT_PUBLICACAO, 'dd/MM/yyyy') AS 'Publicação',
+		LIV_IN_ID_AUTOR AS  'Id Autor',
+		LIV_IN_ID_EDITORA AS 'Id editora'
 		FROM
 			BIB_LIVRO
 		END
+ELSE
+	BEGIN
+		SELECT
+		LIV_IN_ID AS 'Id livro',
+		LIV_ST_TITULO AS 'Título',
+		LIV_CH_ISBN AS 'CódigoISBN',
+		LIV_RE_PRECO AS 'Preço',
+		FORMAT(LIV_DT_PUBLICACAO, 'dd/MM/yyyy') AS 'Publicação',
+		LIV_IN_ID_AUTOR AS  'Id Autor',
+		LIV_IN_ID_EDITORA AS 'Id editora'
+		FROM
+			BIB_LIVRO	
+		WHERE LIV_ST_TITULO LIKE '%'+@filtro+'%' OR
+		LIV_IN_ID_AUTOR LIKE '%'+@filtro+'%'
+	END
+RETURN
 
 /*
 *******************************************
@@ -124,10 +134,7 @@ IF(LEN(TRIM(@filtro))=0)
 *******************************************
 */
 
-USE BIBLIOTECA
-GO
-
-CREATE PROCEDURE SP_D_BIB_LIVRO
+CREATE OR ALTER PROCEDURE SP_D_BIB_LIVRO
 @id int
 AS
 DECLARE @TOTAL_LIVRO INT
@@ -136,7 +143,7 @@ SELECT @TOTAL_LIVRO = COUNT(LIV_IN_ID) FROM BIB_LIVRO WHERE LIV_IN_ID = @id
 
 IF(@TOTAL_LIVRO < 1)
 	BEGIN
-		RAISERROR('O id informado n�o existe', 15,1)
+		RAISERROR('O id informado não existe', 15,1)
 		RETURN
 	END
 
@@ -152,7 +159,7 @@ GO
 
 
 CREATE OR ALTER PROCEDURE SP_U_BIB_LIVRO
-(@id int, @isbn char(14), @titulo varchar(100), @preco numeric(10,1), @publicacao date)
+(@id int, @isbn char(14), @titulo varchar(100), @preco numeric(10,1), @publicacao date, @idautor int, @ideditora int)
 AS
 
 SET NOCOUNT ON
@@ -162,25 +169,25 @@ WHERE LIV_CH_ISBN = @isbn AND LIV_IN_ID <> @id
 
 IF(@TOTAL_LIVRO > 0)
 	BEGIN
-		RAISERROR('O c�digo ISBN j� existe', 15,1)
+		RAISERROR('O código ISBN já existe', 15,1)
 		RETURN
 	END
 
 IF(@preco < 0)
 	BEGIN
-		RAISERROR('O pre�o deve ser um valor positivo', 15,1)
+		RAISERROR('O preço deve ser um valor positivo', 15,1)
 		RETURN
 	END
 
 IF(@isbn NOT LIKE '[0-9][0-9][-][0-9][0-9][0-9][0-9]')
 	BEGIN
-		RAISERROR('O c�digo ISBN n�o est� no formato', 15,1)
+		RAISERROR('O código ISBN não está no formato', 15,1)
 		RETURN
 	END
 
 IF(LEN(TRIM(@titulo))=0)
 	BEGIN
-		RAISERROR('O titulo do livro � obrigat�rio', 15,1)
+		RAISERROR('O titulo do livro é obrigatório', 15,1)
 		RETURN
 	END
 
@@ -189,27 +196,28 @@ SELECT @TOTAL_LIVROS = COUNT(LIV_IN_ID) FROM BIB_LIVRO WHERE LIV_IN_ID = @id
 
 IF(@TOTAL_LIVROS < 1)
 	BEGIN
-		RAISERROR('O id informado n�o existe', 15,1)
+		RAISERROR('O id informado não existe', 15,1)
 		RETURN
 	END
 
 UPDATE BIB_LIVRO SET LIV_ST_TITULO = @titulo,
 					 LIV_CH_ISBN = @isbn,
 					 LIV_RE_PRECO = @preco,
-					 LIV_DT_PUBLICACAO = @publicacao
+					 LIV_DT_PUBLICACAO = @publicacao,
+					 LIV_IN_ID_AUTOR = @idautor,
+					 LIV_IN_ID_EDITORA = @ideditora
 
 				WHERE
 					LIV_IN_ID = @id
 				RETURN
 GO
 
+
 /*
 *******************************************
 * STORED PROCEDURE DE INSERT AUTORES
 *******************************************
 */
-USE BIBLIOTECA
-GO
 
 CREATE OR ALTER PROCEDURE SP_I_BIB_AUTORES
 (@nome varchar(20), @sobrenome varchar(50))
@@ -218,13 +226,13 @@ DECLARE @TOTAL_AUTORES INT
 SELECT @TOTAL_AUTORES = COUNT(*) FROM  BIB_AUTORES WHERE AUT_ST_NOME = @nome
 IF(@TOTAL_AUTORES > 0)
 	BEGIN
-		RAISERROR('O nome informado j� existe', 15,1)
+		RAISERROR('O nome informado já existe', 15,1)
 		RETURN
 	END
 
 IF(LEN(TRIM(@nome))=0)
 	BEGIN
-		RAISERROR('O campo nome � obrigat�rio', 15,1)
+		RAISERROR('O campo nome é obrigatório', 15,1)
 		RETURN
 	END
 
@@ -237,9 +245,7 @@ GO
 *******************************************
 */
 
-USE BIBLIOTECA
-GO
-CREATE OR ALTER PROCEDURE SP_S_BIB_AUUTORES
+CREATE OR ALTER PROCEDURE SP_S_BIB_AUTORES
 (@filtro varchar(100)='')
 AS
 IF(LEN(TRIM(@filtro))=0)
@@ -251,6 +257,18 @@ IF(LEN(TRIM(@filtro))=0)
 			FROM
 				BIB_AUTORES
 	END
+ELSE
+	BEGIN
+		SELECT
+		AUT_IN_ID AS 'Id autor',
+		AUT_ST_NOME AS 'Nome',
+		AUT_ST_SOBRENOME AS 'Sobrenome'
+		FROM
+			BIB_AUTORES
+		WHERE AUT_ST_NOME LIKE '%'+@filtro+'%' OR
+		AUT_ST_SOBRENOME LIKE '%'+@filtro+'%'
+	END
+RETURN
 GO
 
 /*
@@ -258,8 +276,6 @@ GO
 * STORED PROCEDURE DE DELETE AUTORES
 *******************************************
 */
-USE BIBLIOTECA
-GO
 
 CREATE OR ALTER PROCEDURE SP_D_BIB_AUTORES
 @id int
@@ -269,7 +285,7 @@ SELECT @TOTAL_AUTORES = COUNT(AUT_IN_ID) FROM BIB_AUTORES WHERE AUT_IN_ID = @id
 
 IF(@TOTAL_AUTORES < 1)
 	BEGIN
-		RAISERROR('O id informado n�o existe',15,1)
+		RAISERROR('O id informado não existe',15,1)
 		RETURN
 	END
 DELETE FROM BIB_AUTORES WHERE AUT_IN_ID = @id
@@ -282,9 +298,6 @@ GO
 *******************************************
 */
 
-USE BIBLIOTECA
-GO
-
 CREATE OR ALTER PROCEDURE SP_U_BIB_AUTORES
 (@id int, @nome varchar(20), @sobrenome varchar(50))
 AS
@@ -294,13 +307,13 @@ WHERE AUT_ST_SOBRENOME = @sobrenome AND  AUT_IN_ID = @id
 
 IF(@TOTAL_SOBRENOME > 0)
 	BEGIN
-		RAISERROR('O sobrenome informado j� existe', 15,1)
+		RAISERROR('O sobrenome informado já existe', 15,1)
 		RETURN
 	END
 
 IF (LEN(TRIM(@nome))=0)
 	BEGIN
-		RAISERROR('O nome do produto � obrigat�rio', 15,1)
+		RAISERROR('O nome do produto é obrigatório', 15,1)
 		RETURN
 	END
 
@@ -310,7 +323,7 @@ WHERE AUT_IN_ID = @id
 
 IF(@TOTAL_AUTORES < 1)
 	BEGIN
-		RAISERROR('O id informado n�o existe', 15,1)
+		RAISERROR('O id informado não existe', 15,1)
 		RETURN
 	END
 
@@ -328,15 +341,19 @@ GO
 *******************************************
 */
 
-USE BIBLIOTECA
-GO
-
 CREATE OR ALTER PROCEDURE SP_I_BIB_EDITORA
 (@nome varchar(50))
 AS
+DECLARE @TOTAL_EDITORA INT
+SELECT @TOTAL_EDITORA = COUNT(*) FROM BIB_EDITORA WHERE EDI_ST_NOME = @nome
+IF(@TOTAL_EDITORA > 0)
+	BEGIN
+		RAISERROR('O nome inserido já existe', 15,1)
+		RETURN
+	END
 IF(LEN(TRIM(@nome))=0)
 	BEGIN
-		RAISERROR('O campo nome da editora � obrigat�rio', 15,1)
+		RAISERROR('O campo nome da editora é obrigatório', 15,1)
 		RETURN
 	END
 
@@ -349,8 +366,6 @@ GO
 *******************************************
 */
 
-USE BIBLIOTECA
-GO
 
 CREATE OR ALTER PROCEDURE SP_S_BIB_EDITORA
 (@filtro varchar(100)='')
@@ -374,7 +389,7 @@ ELSE
 	END
 RETURN
 GO
-			
+
 /*
 *******************************************
 * STORED PROCEDURE DE DELETE EDITORA
@@ -393,7 +408,7 @@ WHERE EDI_IN_ID = @id
 
 IF(@TOTAL_EDITORA < 1)
 	BEGIN
-		RAISERROR('O id n�o existe', 15,1)
+		RAISERROR('O id não existe', 15,1)
 		RETURN
 	END
 
@@ -401,17 +416,12 @@ DELETE FROM BIB_EDITORA WHERE EDI_IN_ID = @id
 RETURN
 GO
 
-/*CREATE TABLE BIB_EDITORA(
-EDI_IN_ID INT NOT NULL IDENTITY CONSTRAINT BIB_PK_EDITORA PRIMARY KEY,
-EDI_ST_NOME VARCHAR(50) NOT NULL,
-);*/
-
 CREATE OR ALTER PROCEDURE SP_U_BIB_EDITORA
 @id int, @nome varchar(50)
 AS
 IF(LEN(TRIM(@nome))=0)
 	BEGIN
-		RAISERROR('O nome da editora � obrigat�rio',15,1);
+		RAISERROR('O nome da editora é obrigatório',15,1);
 	RETURN
 END
 
@@ -419,7 +429,7 @@ DECLARE @TOTAL_EDITORA INT
 SELECT @TOTAL_EDITORA = COUNT(EDI_IN_ID) FROM BIB_EDITORA WHERE EDI_IN_ID = @id;
 IF(@TOTAL_EDITORA < 1)
 	BEGIN
-		RAISERROR('O id informado j� existe',15,1);
+		RAISERROR('O id informado já existe',15,1);
 		RETURN
 	END
 UPDATE BIB_EDITORA
@@ -438,5 +448,3 @@ RETURN(
 	ON BIB_LIVRO.LIV_IN_ID_AUTOR = BIB_AUTORES.AUT_IN_ID
 	WHERE LIV_RE_PRECO > @valor
 )
-
---SELECT * FROM itens(60)
