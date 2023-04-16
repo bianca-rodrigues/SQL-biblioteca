@@ -1,6 +1,8 @@
 import express from "express";
 import cors from 'cors'
 import rotasLivros from './routes/livros.js'
+import rotasAutores from './routes/autores.js'
+import rotasEditora from './routes/editoras.js'
 const app = express()
 const port = 4000
 
@@ -9,6 +11,8 @@ app.use(express.urlencoded({extended: true}))
 app.use(express.json()) 
 
 app.use('/api/livros', rotasLivros)
+app.use('/api/autores', rotasAutores)
+app.use('/api/editoras', rotasEditora)
 
 app.use('/', express.static('public'))
 
