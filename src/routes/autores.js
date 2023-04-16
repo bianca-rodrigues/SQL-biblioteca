@@ -65,7 +65,7 @@ router.put("/", (req, res) => {
 
   /**********************************************
  * DELETE /livro/
- * Apaga um livro pelo id
+ * Apaga um autor pelo id
  **********************************************/
 router.delete("/:id", (req, res) => {
     sql.connect(sqlConfig).then(pool => {
@@ -82,7 +82,7 @@ router.delete("/:id", (req, res) => {
 
   /**********************************************
  * GET /lvrio
- * Lista um único livro pelo id
+ * Lista um único autor pelo id
  **********************************************/
 router.get("/:id", (req, res) => {
     const id = req.params.id
