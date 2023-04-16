@@ -79,7 +79,7 @@ router.delete("/:id", (req, res) => {
 
   /**********************************************
  * GET /lvrio
- * Lista um único livro pelo id
+ * Lista uma única editora pelo id
  **********************************************/
 router.get("/:id", (req, res) => {
     const id = req.params.id
